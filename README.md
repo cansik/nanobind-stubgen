@@ -1,4 +1,4 @@
-# nanobind-stubgen
+# nanobind-stubgen [![PyPI](https://img.shields.io/pypi/v/nanobind-stubgen)](https://pypi.org/project/nanobind-stubgen/)
 
 Generate Python stub files (`pyi`) for code completion in IDEs for [nanobind](https://github.com/wjakob/nanobind) modules.
 
@@ -28,6 +28,10 @@ changing python version):
 nanobind-stubgen nanogui --out venv/lib/python3.9/site-packages
 ```
 
+### Limitations
+- The stub generator does not use the nanobind project, but the actual compiled python module. This means, that the generator can only detect module and function information that has been writen into the `__doc__` string by nanobind.
+- No imports in the pyi files are currently added
+ 
 ### Help
 
 ```bash
