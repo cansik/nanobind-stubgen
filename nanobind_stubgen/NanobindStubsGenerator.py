@@ -1,12 +1,11 @@
-import ast
 import importlib
 import inspect
-import keyword
-import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
+
+from nanobind_stubgen import utils
 
 
 class StubEntry(ABC):
@@ -92,6 +91,55 @@ class StubNanobindConstant(StubEntry):
             f.writelines(text)
 
 
+class StubProperty(StubEntry):
+    def __init__(self, name: str, obj: Any):
+        super().__init__(name, obj)
+
+        self.has_getter = obj.fget is not None
+        self.has_setter = obj.fset is not None
+
+    def export(self, output_path: Path, intent: int = 0):
+        out = []
+
+        if self.has_getter:
+            out += self._create_getter()
+
+        if self.has_setter:
+            out += self._create_setter()
+
+        with open(output_path, "a") as f:
+            text = self._create_string(out, intent)
+            f.writelines(text)
+
+    def _create_signature(self, f) -> Tuple[str, Optional[str]]:
+        signature, doc_str, func_name = utils.parse_doc_signature(f, f"{self.name}(*args, **kwargs)")
+
+        if func_name == "<anonymous>":
+            signature = signature.replace(func_name, self.name)
+
+        return signature, doc_str
+
+    def _create_method(self, f, annotation: str) -> []:
+        signature, doc_str = self._create_signature(f)
+
+        out = []
+        out.append(f"@{annotation}")
+        out.append(f"def {signature}:")
+
+        if doc_str is not None:
+            out += self._create_doc(doc_str)
+
+        out.append("    ...")
+
+        return out
+
+    def _create_getter(self) -> []:
+        return self._create_method(self.obj.fget, "property")
+
+    def _create_setter(self) -> []:
+        return self._create_method(self.obj.fget, f"{self.name}.setter")
+
+
 class StubClass(StubEntry):
     def __init__(self, name: str, obj: Any):
         super().__init__(name, obj)
@@ -170,43 +218,9 @@ class StubNanobindFunction(StubRoutine):
     def __init__(self, name: str, obj: Any):
         super().__init__(name, obj)
 
-        signature, doc_str = self.parse_doc()
+        signature, doc_str = utils.parse_method_doc(name, obj)
         self.signature = signature
         self.doc_str = doc_str
-
-    @staticmethod
-    def is_valid_python(code):
-        try:
-            ast.parse(code)
-        except SyntaxError:
-            return False
-        return True
-
-    def parse_doc(self) -> Tuple[str, Optional[str]]:
-        doc = self.obj.__doc__
-        if doc is None:
-            return super().routine_signature(), None
-
-        doc_str = str(doc)
-        parts = doc_str.split("\n")
-
-        # todo: handle overloaded function
-        signature = parts[0]
-        doc = "\n".join([p for p in parts[1:] if p.strip() != ""])
-        func_name = signature.split("(")[0].strip()
-
-        if keyword.iskeyword(func_name):
-            logging.warning(f"Function is named like a python keyword ({func_name}): {signature}")
-
-        is_valid = self.is_valid_python(f"def {signature}:\n    pass")
-        if not is_valid:
-            logging.warning(f"Function is not valid python code: {signature}")
-            return super().routine_signature(), None
-
-        if not signature.startswith(self.name):
-            return super().routine_signature(), None
-
-        return signature, doc
 
     def _create_doc(self, doc_str: Optional[str] = None) -> List[str]:
         return super()._create_doc(self.doc_str)
@@ -278,6 +292,11 @@ class NanobindStubsGenerator:
             if isinstance(stub_entry, StubNanobindEnum) and isinstance(obj, module):
                 stub_enum_value = StubNanobindEnumValue(name, obj)
                 stub_entry.children.append(stub_enum_value)
+                has_been_handled = True
+
+            if isinstance(obj, property):
+                stub_property = StubProperty(name, obj)
+                stub_entry.children.append(stub_property)
                 has_been_handled = True
 
             # constants have not been handled
