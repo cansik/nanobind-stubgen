@@ -82,6 +82,16 @@ class StubModule(StubEntry):
         return len([child for child in self.children if isinstance(child, StubModule)]) > 0
 
 
+class StubNanobindConstant(StubEntry):
+
+    def export(self, output_path: Path, intent: int = 0):
+        out = [f"{self.name}: {str(type(self.obj).__name__)}"]
+
+        with open(output_path, "a") as f:
+            text = self._create_string(out, intent)
+            f.writelines(text)
+
+
 class StubClass(StubEntry):
     def __init__(self, name: str, obj: Any):
         super().__init__(name, obj)
@@ -227,7 +237,7 @@ class NanobindStubsGenerator:
             if name.startswith("_") and name != "__init__":
                 continue
 
-            has_been_used = False
+            has_been_handled = False
 
             if inspect.isclass(obj):
                 if type(obj).__name__ == "nb_type":
@@ -236,14 +246,14 @@ class NanobindStubsGenerator:
                     class_module = StubNanobindEnum(name, obj)
                 else:
                     class_module = StubClass(name, obj)
-                has_been_used = True
+                has_been_handled = True
                 stub_entry.children.append(class_module)
                 self._analyse_module(obj, class_module)
 
             if inspect.ismodule(obj):
                 stub_module = StubModule(name, obj)
                 stub_entry.children.append(stub_module)
-                has_been_used = True
+                has_been_handled = True
                 self._analyse_module(obj, stub_module)
 
             if inspect.isroutine(obj):
@@ -257,22 +267,28 @@ class NanobindStubsGenerator:
                         stub_routine = StubNanobindConstructor(name, obj)
                     else:
                         stub_routine = StubRoutine(name, obj)
-                has_been_used = True
+                has_been_handled = True
                 stub_entry.children.append(stub_routine)
 
             if type(obj).__name__ == "nb_func":
                 stub_nb_func = StubNanobindFunction(name, obj)
                 stub_entry.children.append(stub_nb_func)
-                has_been_used = True
+                has_been_handled = True
 
             if isinstance(stub_entry, StubNanobindEnum) and isinstance(obj, module):
                 stub_enum_value = StubNanobindEnumValue(name, obj)
                 stub_entry.children.append(stub_enum_value)
+                has_been_handled = True
 
-            # todo: add support for enums
+            # constants have not been handled
+            if isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
+                stub_constant = StubNanobindConstant(name, obj)
+                stub_entry.children.append(stub_constant)
+                has_been_handled = True
+
             # todo: add support for properties
 
-            if not has_been_used:
+            if not has_been_handled:
                 print(f"{inspect.getmodule(module).__name__}.{name}: {type(obj).__name__}")
 
         return stub_entry
