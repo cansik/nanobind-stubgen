@@ -1,9 +1,11 @@
+import copy
 import importlib
 import inspect
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
+import re
 
 from nanobind_stubgen import utils
 
@@ -70,7 +72,8 @@ class StubModule(StubEntry):
             module_path = output_path.joinpath(f"{self.name}.pyi")
 
         # create init file
-        out = [f"from typing import Any, Optional",
+        out = [f"from typing import Any, Optional, overload",
+               f"from enum import Enum",
                f"import {self.import_path}"]
 
         with open(module_path, "w") as f:
@@ -218,6 +221,20 @@ class StubRoutine(StubEntry):
         return f"{self.name}(*args, **kwargs)"
 
 
+class StubNanobindOverloadFunction(StubRoutine):
+    def __init__(self, name: str, obj: Any, signature: str, doc_str: str):
+        super().__init__(name, obj)
+        self.signature = signature
+        self.doc_str = doc_str
+        self.annotations.append("@overload")
+
+    def _create_doc(self, doc_str: Optional[str] = None) -> List[str]:
+        return super()._create_doc(self.doc_str)
+
+    def routine_signature(self) -> str:
+        return self.signature
+
+
 class StubNanobindFunction(StubRoutine):
     def __init__(self, name: str, obj: Any):
         super().__init__(name, obj)
@@ -226,11 +243,62 @@ class StubNanobindFunction(StubRoutine):
         self.signature = signature
         self.doc_str = doc_str
 
+        self.add_overloads()
+
     def _create_doc(self, doc_str: Optional[str] = None) -> List[str]:
         return super()._create_doc(self.doc_str)
 
     def routine_signature(self) -> str:
         return self.signature
+
+    def export(self, output_path: Path, intent: int = 0):
+        super().export(output_path, intent)
+
+        for child in self.children:
+            child.export(output_path, intent)
+
+    def add_overloads(self):
+        overloads = self.detect_overloads()
+
+        if overloads is None:
+            return
+
+        initial_fn = overloads.pop()
+        self.signature = initial_fn[0]
+        self.doc_str = "\n".join(initial_fn[1])
+
+        for sig, doc in overloads:
+            doc_str = "\n".join(doc)
+            self.children.append(StubNanobindOverloadFunction(self.name, self.obj, sig, doc_str))
+
+    def detect_overloads(self):
+        if self.doc_str is None:
+            return
+
+        fn_regex = r"\d+\.\s*``(?P<signature>.+)``"
+
+        functions = []
+
+        signature = self.signature
+        doc = []
+
+        for line in self.doc_str.splitlines():
+            matches = list(re.finditer(fn_regex, line, re.MULTILINE))
+
+            if len(matches) > 0:
+                functions.append((signature, doc))
+                signature = matches[0].group("signature")
+                doc = []
+                continue
+
+            doc.append(line)
+
+        functions.append((signature, doc))
+
+        if len(functions) > 1:
+            return functions[1:]
+
+        return functions
 
 
 class StubNanobindMethod(StubNanobindFunction):
