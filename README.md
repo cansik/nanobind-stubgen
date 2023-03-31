@@ -30,7 +30,7 @@ nanobind-stubgen nanogui --out venv/lib/python3.9/site-packages
 
 ### Limitations
 - The stub generator does not use the nanobind project, but the actual compiled python module. This means, that the generator can only detect module and function information that has been writen into the `__doc__` string by nanobind.
-- No imports in the pyi files are currently added
+- No imports in the pyi files are added
  
 ### Help
 
