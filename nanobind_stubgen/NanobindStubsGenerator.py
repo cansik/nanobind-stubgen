@@ -1,6 +1,5 @@
 import importlib
 import inspect
-import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -71,8 +70,12 @@ class StubModule(StubEntry):
             module_path = output_path.joinpath(f"{self.name}.pyi")
 
         # create init file
-        with open(module_path, "w"):
-            pass
+        out = [f"from typing import Any, Optional",
+               f"import {self.import_path}"]
+
+        with open(module_path, "w") as f:
+            text = self._create_string(out, intent)
+            f.writelines(text)
 
         for child in self.children:
             child.export(module_path)
@@ -186,7 +189,7 @@ class StubNanobindEnum(StubClass):
 
 class StubNanobindEnumValue(StubEntry):
     def export(self, output_path: Path, intent: int = 0):
-        out = [f"{self.name}"]
+        out = [f"{self.name}: Any"]
 
         with open(output_path, "a") as f:
             text = self._create_string(out, intent)
