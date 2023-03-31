@@ -265,15 +265,22 @@ class StubNanobindFunction(StubRoutine):
 
         initial_fn = overloads.pop()
         self.signature = initial_fn[0]
-        self.doc_str = "\n".join(initial_fn[1])
+        self.doc_str = initial_fn[1]
 
         for sig, doc in overloads:
-            doc_str = "\n".join(doc)
-            self.children.append(StubNanobindOverloadFunction(self.name, self.obj, sig, doc_str))
+            self.children.append(StubNanobindOverloadFunction(self.name, self.obj, sig, doc))
 
     def detect_overloads(self):
-        if self.doc_str is None:
+        doc_str = self.obj.__doc__
+        if doc_str is None:
             return
+
+        lines = doc_str.splitlines()
+
+        # special handling for signatures only
+        if len(lines) > 1 and all([l.startswith(self.name) for l in lines]):
+            overloads = [(l, l) for l in lines]
+            return overloads
 
         fn_regex = r"\d+\.\s*``(?P<signature>.+)``"
 
@@ -282,18 +289,18 @@ class StubNanobindFunction(StubRoutine):
         signature = self.signature
         doc = []
 
-        for line in self.doc_str.splitlines():
+        for line in lines:
             matches = list(re.finditer(fn_regex, line, re.MULTILINE))
 
             if len(matches) > 0:
-                functions.append((signature, doc))
+                functions.append((signature, "\n".join(doc)))
                 signature = matches[0].group("signature")
                 doc = []
                 continue
 
             doc.append(line)
 
-        functions.append((signature, doc))
+        functions.append((signature, "\n".join(doc)))
 
         if len(functions) > 1:
             return functions[1:]
