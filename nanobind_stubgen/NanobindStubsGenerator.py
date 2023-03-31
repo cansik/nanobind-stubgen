@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -300,12 +301,10 @@ class NanobindStubsGenerator:
                 has_been_handled = True
 
             # constants have not been handled
-            if isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, str):
+            if not has_been_handled:
                 stub_constant = StubNanobindConstant(name, obj)
                 stub_entry.children.append(stub_constant)
                 has_been_handled = True
-
-            # todo: add support for properties
 
             if not has_been_handled:
                 print(f"{inspect.getmodule(module).__name__}.{name}: {type(obj).__name__}")
