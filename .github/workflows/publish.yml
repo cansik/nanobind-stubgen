@@ -1,0 +1,61 @@
+name: Publish Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      publishReleases:
+        description: 'Publish to Releases'
+        required: false
+        default: 'true'
+      publishPyPI:
+        description: 'Publish to PyPI'
+        required: false
+        default: 'true'
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # environment: production
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Get Library Version
+      id: get_version
+      run: |
+          lib_version=$(python setup.py --version)
+          echo "Library Version: $lib_version"
+
+          echo ::set-output name=version::"$lib_version"
+          echo ::set-output name=v_version::"v$lib_version"
+
+    - name: Build
+      run: |
+          pip install wheel
+          python setup.py bdist_wheel
+
+    # upload dist
+    - name: Upload binaries to release
+      if: ${{ github.event.inputs.publishReleases == 'true' }}
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: dist/*.whl
+        tag: ${{ steps.get_version.outputs.v_version }}
+        release_name: "Version ${{ steps.get_version.outputs.version }}"
+        body: "Prebuilt wheel packages version ${{ steps.get_version.outputs.version }}."
+        overwrite: true
+        file_glob: true
+
+    # publish to PyPI
+    - name: Publish package to PyPI
+      if: ${{ github.event.inputs.publishPyPI == 'true' }}
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
