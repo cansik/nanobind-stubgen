@@ -21,7 +21,7 @@ nanobind-stubgen nanogui
 ```
 
 It is possible to change the output path (by default it is the current directory) by specifying the parameter `--out`. To
-create the pyi files directly in the nanogui directory, the following command can be used (note the
+create the pyi files directly in the nanogui package directory, the following command can be used (note the
 changing python version):
 
 ```bash
