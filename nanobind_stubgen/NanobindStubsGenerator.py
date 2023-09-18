@@ -1,11 +1,10 @@
-import copy
 import importlib
 import inspect
 import os
+import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
-import re
 
 from nanobind_stubgen import utils
 
@@ -72,7 +71,7 @@ class StubModule(StubEntry):
             module_path = output_path.joinpath(f"{self.name}.pyi")
 
         # create init file
-        out = [f"from typing import Any, Optional, overload",
+        out = [f"from typing import Any, Optional, overload, Typing, Sequence",
                f"from enum import Enum",
                f"import {self.import_path}"]
 
