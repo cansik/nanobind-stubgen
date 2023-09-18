@@ -29,8 +29,15 @@ def update_opaque_signature(signature: str) -> str:
 
 def update_std_pair_signature(signature: str) -> str:
     # Replace "std::__1::pair<$a, $b>" to "Tuple[$a, $b]"
-    # todo: handle recursive tuples (not possible with regex)
+    # todo: handle recursive pairs (not possible with regex)
     signature = re.sub(r"std::__1::pair<([\w\_\.]*),\s*([\w\_\.]*)>", r"Tuple[\1, \2]", signature)
+    return signature
+
+
+def update_std_tuple_signature(signature: str) -> str:
+    # Replace "std::__1::tuple<$a, $b, $c, $d>" to "Tuple[$a, $b]"
+    # todo: handle recursive tuples (not possible with regex)
+    signature = re.sub(r"std::__1::tuple<(.*)>", r"Tuple[\1]", signature)
     return signature
 
 
@@ -45,6 +52,7 @@ def post_process_signature(signature: str) -> str:
     signature = update_ndarray_signature(signature)
     signature = update_opaque_signature(signature)
     signature = update_std_pair_signature(signature)
+    signature = update_std_tuple_signature(signature)
     signature = update_tensor_signature(signature)
     return signature
 
