@@ -144,7 +144,7 @@ class StubProperty(StubEntry):
         return self._create_method(self.obj.fget, "property")
 
     def _create_setter(self) -> []:
-        return self._create_method(self.obj.fget, f"{self.name}.setter")
+        return self._create_method(self.obj.fset, f"{self.name}.setter")
 
 
 class StubClass(StubEntry):
