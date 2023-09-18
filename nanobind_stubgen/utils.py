@@ -2,6 +2,7 @@ import ast
 import keyword
 import logging
 from typing import Tuple, Optional, Any
+import re
 
 
 def is_valid_python(code: str) -> bool:
@@ -10,6 +11,26 @@ def is_valid_python(code: str) -> bool:
     except SyntaxError:
         return False
     return True
+
+
+def update_ndarray_signature(signature: str) -> str:
+    # Replace "numpy.ndarray[...]" to "numpy.typing.NDArray"
+    signature = re.sub(
+        r"numpy.ndarray\[.*?\]", "numpy.typing.NDArray", signature
+    )
+    return signature
+
+
+def update_opaque_signature(signature: str) -> str:
+    # Replace "<$type $object at $address>" to "..."
+    signature = re.sub(r"<.* at 0x[0-9a-f]+>", "...", signature)
+    return signature
+
+
+def post_process_signature(signature: str) -> str:
+    signature = update_ndarray_signature(signature)
+    signature = update_opaque_signature(signature)
+    return signature
 
 
 def parse_doc_signature(obj: Any, basic_signature: str) -> Tuple[str, Optional[str], Optional[str]]:
@@ -24,6 +45,8 @@ def parse_doc_signature(obj: Any, basic_signature: str) -> Tuple[str, Optional[s
     signature = parts[0]
     doc = "\n".join([p for p in parts[1:] if p.strip() != ""])
     func_name = signature.split("(")[0].strip()
+
+    signature = post_process_signature(signature)
 
     return signature, doc, func_name
 

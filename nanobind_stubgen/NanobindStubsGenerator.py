@@ -267,7 +267,10 @@ class StubNanobindFunction(StubRoutine):
         self.signature = initial_fn[0]
         self.doc_str = initial_fn[1]
 
+        self.signature = utils.post_process_signature(self.signature)
+
         for sig, doc in overloads:
+            sig = utils.post_process_signature(sig)
             self.children.append(StubNanobindOverloadFunction(self.name, self.obj, sig, doc))
 
     def detect_overloads(self):
