@@ -36,6 +36,7 @@ def update_std_pair_signature(signature: str) -> str:
 
 def update_tensor_signature(signature: str) -> str:
     # Replace "tensor[*]" with "numpy.typing.NDArray"
+    # todo: handle tensor types
     signature = re.sub(r"tensor\[.*\]", r"numpy.typing.NDArray", signature)
     return signature
 
@@ -66,7 +67,8 @@ def parse_doc_signature(obj: Any, basic_signature: str) -> Tuple[str, Optional[s
     return signature, doc, func_name
 
 
-def parse_method_doc(name: str, obj: Any, test_code: bool = True) -> Tuple[str, Optional[str]]:
+def parse_method_doc(name: str, obj: Any,
+                     test_code: bool = True, suppress_warning: bool = False) -> Tuple[str, Optional[str]]:
     basic_signature = f"{name}(*args, **kwargs)"
 
     signature, doc, func_name = parse_doc_signature(obj, basic_signature)
@@ -77,7 +79,8 @@ def parse_method_doc(name: str, obj: Any, test_code: bool = True) -> Tuple[str, 
     if test_code:
         is_valid = is_valid_python(f"def {signature}:\n    pass")
         if not is_valid:
-            logging.warning(f"Function is not valid python code: {signature}")
+            if not suppress_warning:
+                logging.warning(f"Function is not valid python code: {signature}")
             return basic_signature, None
 
     if not signature.startswith(name):

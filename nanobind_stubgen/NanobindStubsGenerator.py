@@ -235,10 +235,10 @@ class StubNanobindOverloadFunction(StubRoutine):
 
 
 class StubNanobindFunction(StubRoutine):
-    def __init__(self, name: str, obj: Any):
+    def __init__(self, name: str, obj: Any, test_code: bool = True, suppress_warning: bool = False):
         super().__init__(name, obj)
 
-        signature, doc_str = utils.parse_method_doc(name, obj)
+        signature, doc_str = utils.parse_method_doc(name, obj, test_code, suppress_warning)
         self.signature = signature
         self.doc_str = doc_str
 
@@ -332,7 +332,7 @@ class NanobindStubsGenerator:
         result = self._analyse_module(self.module, StubModule(self.module_name, self.module))
         return result
 
-    def _analyse_module(self, module, stub_entry: StubEntry) -> StubModule:
+    def _analyse_module(self, module: Any, stub_entry: StubEntry) -> StubModule:
         for name, obj in inspect.getmembers(module):
             if name.startswith("_") and name != "__init__":
                 continue
@@ -364,7 +364,12 @@ class NanobindStubsGenerator:
                         stub_routine = StubNanobindMethod(name, obj)
                 else:
                     if name == "__init__":
-                        stub_routine = StubNanobindConstructor(name, obj)
+                        module_name = type(module).__name__
+                        if module_name == "nb_enum" or module_name == "nb_type":
+                            # todo: handle enum and type constructors
+                            stub_routine = StubNanobindConstructor(name, obj, suppress_warning=True)
+                        else:
+                            stub_routine = StubNanobindConstructor(name, obj)
                     else:
                         stub_routine = StubRoutine(name, obj)
                 has_been_handled = True
