@@ -34,10 +34,17 @@ def update_std_pair_signature(signature: str) -> str:
     return signature
 
 
+def update_tensor_signature(signature: str) -> str:
+    # Replace "tensor[*]" with "numpy.typing.NDArray"
+    signature = re.sub(r"tensor\[.*\]", r"numpy.typing.NDArray", signature)
+    return signature
+
+
 def post_process_signature(signature: str) -> str:
     signature = update_ndarray_signature(signature)
     signature = update_opaque_signature(signature)
     signature = update_std_pair_signature(signature)
+    signature = update_tensor_signature(signature)
     return signature
 
 
