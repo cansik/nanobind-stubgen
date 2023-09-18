@@ -20,10 +20,18 @@ def update_ndarray_signature(signature: str) -> str:
     )
     return signature
 
+
 def update_opaque_signature(signature: str) -> str:
     # Replace "<$type $object at $address>" to "..."
     signature = re.sub(r"<.* at 0x[0-9a-f]+>", "...", signature)
     return signature
+
+
+def post_process_signature(signature: str) -> str:
+    signature = update_ndarray_signature(signature)
+    signature = update_opaque_signature(signature)
+    return signature
+
 
 def parse_doc_signature(obj: Any, basic_signature: str) -> Tuple[str, Optional[str], Optional[str]]:
     doc = obj.__doc__
@@ -38,8 +46,7 @@ def parse_doc_signature(obj: Any, basic_signature: str) -> Tuple[str, Optional[s
     doc = "\n".join([p for p in parts[1:] if p.strip() != ""])
     func_name = signature.split("(")[0].strip()
 
-    signature = update_ndarray_signature(signature)
-    signature = update_opaque_signature(signature)
+    signature = post_process_signature(signature)
 
     return signature, doc, func_name
 
