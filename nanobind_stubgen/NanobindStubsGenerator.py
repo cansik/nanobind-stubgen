@@ -271,6 +271,8 @@ class StubNanobindFunction(StubRoutine):
         self.signature = utils.update_opaque_signature(self.signature)
 
         for sig, doc in overloads:
+            sig = utils.update_ndarray_signature(sig)
+            sig = utils.update_opaque_signature(sig)
             self.children.append(StubNanobindOverloadFunction(self.name, self.obj, sig, doc))
 
     def detect_overloads(self):
