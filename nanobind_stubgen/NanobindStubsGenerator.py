@@ -328,9 +328,9 @@ class StubNanobindConstructor(StubNanobindMethod):
 
 
 class NanobindStubsGenerator:
-    def __init__(self, module_name: str):
+    def __init__(self, module_name: str, package_name: Optional[str] = None):
         self.module_name = module_name
-        self.module = importlib.import_module(self.module_name)
+        self.module = importlib.import_module(self.module_name, package=package_name)
 
     def analyse(self) -> StubModule:
         result = self._analyse_module(self.module, StubModule(self.module_name, self.module))
