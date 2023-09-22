@@ -39,9 +39,14 @@ class StubEntry(ABC):
         if doc_str is None:
             doc_str = self.obj.__doc__
 
+        # split doc string for per-line indentation
+        doc_str = str(doc_str).strip()
+        doc_lines = [l.strip() for l in doc_str.split("\n")]
+
         if doc_str is not None and str(doc_str).strip() != "":
             out.append(f"    \"\"\"")
-            out.append(f"    {doc_str}")
+            for line in doc_lines:
+                out.append(f"    {line}")
             out.append(f"    \"\"\"")
 
         return out

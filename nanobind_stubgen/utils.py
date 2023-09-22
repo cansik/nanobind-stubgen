@@ -67,7 +67,7 @@ def parse_doc_signature(obj: Any, basic_signature: str) -> Tuple[str, Optional[s
 
     # todo: handle overloaded function
     signature = parts[0]
-    doc = "\n".join([p for p in parts[1:] if p.strip() != ""])
+    doc = "\n".join([p for p in parts[1:]])
     func_name = signature.split("(")[0].strip()
 
     signature = post_process_signature(signature)
