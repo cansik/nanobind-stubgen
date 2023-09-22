@@ -123,6 +123,10 @@ class StubProperty(StubEntry):
         if func_name == "<anonymous>":
             signature = signature.replace(func_name, self.name)
 
+        # fix for missing function name
+        if not signature.startswith(self.name):
+            signature = f"{self.name}{signature}"
+
         return signature, doc_str
 
     def _create_method(self, f, annotation: str) -> []:
