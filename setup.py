@@ -16,7 +16,7 @@ long_description = (current_dir / "README.md").read_text()
 
 setup(
     name='nanobind-stubgen',
-    version='0.1.2',
+    version='0.1.3',
     packages=['nanobind_stubgen'],
     url='https://github.com/cansik/nanobind-stubgen',
     license='MIT license',

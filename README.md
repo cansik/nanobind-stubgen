@@ -36,16 +36,13 @@ nanobind-stubgen nanogui --out venv/lib/python3.9/site-packages
 ### Help
 
 ```bash
-usage: nanobind-stubgen [-h] [--out OUT] module
-
-Nanobind Stubs Generator
-
 positional arguments:
-  module      Module to create stubs (e.g. nanogui).
+  module             Module to create stubs (e.g. nanogui).
 
 optional arguments:
-  -h, --help  show this help message and exit
-  --out OUT   Output path for the generated pyi files.
+  -h, --help         show this help message and exit
+  --package PACKAGE  Optional package path to import module from.
+  --out OUT          Output path for the generated pyi files.
 ```
 
 ### About
