@@ -16,7 +16,7 @@ def is_valid_python(code: str) -> bool:
 def update_ndarray_signature(signature: str) -> str:
     # Replace "numpy.ndarray[...]" to "numpy.typing.NDArray"
     signature = re.sub(
-        r"numpy.ndarray\[.*?\]", "numpy.typing.NDArray", signature
+        r"(numpy.)?ndarray\[.*?\]", "numpy.typing.NDArray", signature
     )
     return signature
 
