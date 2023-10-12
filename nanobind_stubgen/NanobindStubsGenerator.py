@@ -1,5 +1,6 @@
 import importlib
 import inspect
+from pydoc import locate
 import os
 import re
 from abc import ABC, abstractmethod
@@ -7,7 +8,6 @@ from pathlib import Path
 from typing import Any, List, Optional, Tuple
 
 from nanobind_stubgen import utils
-
 
 class StubEntry(ABC):
     def __init__(self, name: str, obj: Any, sub_modules: Optional[List["StubEntry"]] = None):
@@ -38,16 +38,16 @@ class StubEntry(ABC):
 
         if doc_str is None:
             doc_str = self.obj.__doc__
+        
+        if not isinstance(doc_str, str) or doc_str == "":
+            return out
 
-        # split doc string for per-line indentation
-        doc_str = str(doc_str).strip()
-        doc_lines = [l.strip() for l in doc_str.split("\n")]
+        doc_lines = [i for i in inspect.cleandoc(doc_str).split("\n")]
 
-        if doc_str is not None and str(doc_str).strip() != "":
-            out.append(f"    \"\"\"")
-            for line in doc_lines:
-                out.append(f"    {line}")
-            out.append(f"    \"\"\"")
+        out.append(f"    \"\"\"")
+        for line in doc_lines:
+            out.append(f"    {line}")
+        out.append(f"    \"\"\"")
 
         return out
 
@@ -60,6 +60,8 @@ class StubModule(StubEntry):
 
     def export(self, output_path: Path, intent: int = 0):
         print(f"exporting module {self.name}")
+
+        signatures = self.get_all_signatures(self, [])
 
         if output_path.is_dir():
             os.makedirs(output_path, exist_ok=True)
@@ -76,9 +78,78 @@ class StubModule(StubEntry):
             module_path = output_path.joinpath(f"{self.name}.pyi")
 
         # create init file
-        out = [f"from typing import Any, Optional, overload, Typing, Sequence",
-               f"from enum import Enum",
-               f"import {self.import_path}"]
+        builtin_modules = (
+            "typing",
+            "enum"
+        )
+        builtin_imports = {}
+        other_imports = []
+        types = []
+
+        for signature in signatures:
+            reg = re.search( "\((.*)\)" , signature)
+            if reg:
+                args = reg.group(1)
+            else:
+                args = ""
+
+            for arg in args.split(","):
+                arg = arg.strip()
+                if "Enum" in arg:
+                    types.append("Enum")
+                    continue
+                elif ":" not in arg:
+                    continue
+                argtype = arg.split(":")[1].strip()
+                if "=" in arg:
+                    argtype = argtype.split("=")[0].strip()
+                types.append(argtype)
+
+            if "->" in signature:
+                rtype = signature.split("->")[-1].strip()
+                types.append(rtype)
+
+            if "@overload" in signature:
+                types.append("overload")
+
+        for t in list(dict.fromkeys(types)):
+            t = t.split("[")[0]
+            t_type = locate(t)
+            if t == "None" or (t_type and inspect.getmodule(t_type).__name__ == "builtins"):
+                continue
+
+            klass = None
+            for module in builtin_modules:
+                if t in locate(module).__dict__.keys():
+                    klass = t
+                    break
+
+            if klass:
+                if module not in builtin_imports:
+                    builtin_imports[module] = []
+                if klass not in builtin_imports[module]:
+                    builtin_imports[module].append(klass)
+            else:
+                if "." in t:
+                    module = ".".join(t.split(".")[:-1])
+                else:
+                    module = t
+                if not module.split(".")[0] == self.import_path.split(".")[0] and t not in other_imports:
+                    other_imports.append(module)
+                    if not locate(module):
+                        print(f"WARNING: Cannot locate imported module \"{module}\"")
+                
+        
+        out = ["from __future__ import annotations"]
+        for module, klasses in builtin_imports.items():
+            out.append(f"from {module} import {', '.join(klasses)}")
+        for module in other_imports:
+            out.append(f"import {module}")
+        
+        out.append("try:")
+        out.append(f"    from . import {self.import_path}")
+        out.append("except (ModuleNotFoundError, ImportError) as e:")
+        out.append(f"    import {self.import_path}")
 
         with open(module_path, "w") as f:
             text = self._create_string(out, intent)
@@ -90,6 +161,47 @@ class StubModule(StubEntry):
     @property
     def has_sub_modules(self) -> bool:
         return len([child for child in self.children if isinstance(child, StubModule)]) > 0
+    
+    def get_all_signatures(self, entry: StubEntry = None, signatures: list = []):
+        if not entry:
+            entry = self
+
+        if entry.has_children:
+            for child in entry.children:
+                signatures = self.get_all_signatures(child, signatures)
+
+        signature = None
+        if type(entry) in (
+                StubNanobindMethod,
+                StubNanobindFunction,
+                StubNanobindConstructor
+            ):
+            signature = entry.signature
+
+        elif type(entry) == StubNanobindOverloadFunction:
+
+            signature = "@overload " + entry.signature
+
+        elif type(entry) == StubProperty:
+            signature = entry._create_signature(entry.obj.fget)[0]
+
+        elif type(entry) in (
+                StubClass,
+                StubNanobindEnum,
+                StubNanobindType
+            ):
+            super_classes_str = ", ".join(entry.super_classes)
+            if len(entry.super_classes) > 0:
+                super_classes_str = f"({super_classes_str})"
+            signature = f"{entry.name}{super_classes_str}:"
+        
+        elif type(entry) == StubNanobindEnumValue:
+            signature = "_(_: Any)"
+        
+        if signature:
+            signatures.append(signature)
+
+        return signatures
 
 
 class StubNanobindConstant(StubEntry):
