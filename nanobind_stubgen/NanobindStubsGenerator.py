@@ -125,7 +125,7 @@ class StubProperty(StubEntry):
     def _create_signature(self, f) -> Tuple[str, Optional[str]]:
         signature, doc_str, func_name = utils.parse_doc_signature(f, f"{self.name}(*args, **kwargs)")
 
-        if func_name == "<anonymous>":
+        if func_name == "<anonymous>" or func_name == "":
             signature = signature.replace(func_name, self.name)
 
         # fix for missing function name
