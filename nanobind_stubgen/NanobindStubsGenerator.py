@@ -351,7 +351,7 @@ class NanobindStubsGenerator:
             if inspect.isclass(obj):
                 if type(obj).__name__ == "nb_type":
                     class_module = StubNanobindType(name, obj)
-                elif hasattr(obj, "@entries"):
+                elif hasattr(obj, "@entries") or type(obj).__name__ == "nb_enum":
                     class_module = StubNanobindEnum(name, obj)
                 else:
                     class_module = StubClass(name, obj)
