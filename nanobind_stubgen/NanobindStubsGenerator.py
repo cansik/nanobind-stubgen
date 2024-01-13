@@ -351,7 +351,7 @@ class NanobindStubsGenerator:
             if inspect.isclass(obj):
                 if type(obj).__name__ == "nb_type":
                     class_module = StubNanobindType(name, obj)
-                elif type(obj).__name__ == "nb_enum":
+                elif hasattr(obj, "@entries") or type(obj).__name__ == "nb_enum":
                     class_module = StubNanobindEnum(name, obj)
                 else:
                     class_module = StubClass(name, obj)
@@ -401,8 +401,9 @@ class NanobindStubsGenerator:
 
             # constants have not been handled
             if not has_been_handled:
-                stub_constant = StubNanobindConstant(name, obj)
-                stub_entry.children.append(stub_constant)
+                if name != "@entries":
+                    stub_constant = StubNanobindConstant(name, obj)
+                    stub_entry.children.append(stub_constant)
                 has_been_handled = True
 
             if not has_been_handled:
