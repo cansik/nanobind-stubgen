@@ -47,6 +47,11 @@ def update_tensor_signature(signature: str) -> str:
     signature = re.sub(r"tensor\[.*\]", r"numpy.typing.NDArray", signature)
     return signature
 
+def update_list_signature(signature: str) -> str:
+    # Replace "List[*]" with "list"
+    signature = re.sub(r"List\[(.*)]", r"list[\1]", signature)
+    return signature
+
 
 def post_process_signature(signature: str) -> str:
     signature = update_ndarray_signature(signature)
@@ -54,6 +59,7 @@ def post_process_signature(signature: str) -> str:
     signature = update_std_pair_signature(signature)
     signature = update_std_tuple_signature(signature)
     signature = update_tensor_signature(signature)
+    signature = update_list_signature(signature)
     return signature
 
 
