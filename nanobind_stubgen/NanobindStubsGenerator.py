@@ -76,7 +76,7 @@ class StubModule(StubEntry):
             module_path = output_path.joinpath(f"{self.name}.pyi")
 
         # create init file
-        out = [f"from typing import Any, Optional, overload, Typing, Sequence",
+        out = [f"from typing import Any, Optional, overload, Typing, Sequence, Iterable, Union, Callable",
                f"from enum import Enum",
                f"import {self.import_path}"]
 
@@ -125,7 +125,7 @@ class StubProperty(StubEntry):
     def _create_signature(self, f) -> Tuple[str, Optional[str]]:
         signature, doc_str, func_name = utils.parse_doc_signature(f, f"{self.name}(*args, **kwargs)")
 
-        if func_name == "<anonymous>" or func_name == "":
+        if func_name == "<anonymous>":
             signature = signature.replace(func_name, self.name)
 
         # fix for missing function name
@@ -185,6 +185,13 @@ class StubClass(StubEntry):
                 continue
 
             child.export(output_path, intent + 1)
+
+
+class StubException(StubClass):
+    def __init__(self, name: str, obj: Any):
+        super().__init__(name, obj)
+        self.super_classes.append("Exception")
+        self.filter_child_type.add(StubNanobindConstant)
 
 
 class StubNanobindType(StubClass):
@@ -353,6 +360,8 @@ class NanobindStubsGenerator:
                     class_module = StubNanobindType(name, obj)
                 elif hasattr(obj, "@entries") or type(obj).__name__ == "nb_enum":
                     class_module = StubNanobindEnum(name, obj)
+                elif issubclass(obj, Exception):
+                    class_module = StubException(name, obj)
                 else:
                     class_module = StubClass(name, obj)
                 has_been_handled = True
