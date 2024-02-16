@@ -80,12 +80,20 @@ class StubModule(StubEntry):
                f"from enum import Enum",
                f"import {self.import_path}"]
 
+        # import sub modules
+        for child in self.children:
+            if isinstance(child, StubModule):
+                out.append(f"from . import {child.name}")
+
         with open(module_path, "w") as f:
             text = self._create_string(out, intent)
             f.writelines(text)
 
         for child in self.children:
-            child.export(module_path)
+            if isinstance(child, StubModule):
+                child.export(output_path)
+            else:
+                child.export(module_path)
 
     @property
     def has_sub_modules(self) -> bool:
