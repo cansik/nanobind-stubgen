@@ -383,7 +383,7 @@ class NanobindStubsGenerator:
                 else:
                     if name == "__init__":
                         module_name = type(module).__name__
-                        if module_name == "nb_enum" or module_name == "nb_type":
+                        if module_name == "nb_enum" or module_name.startswith("nb_type"):
                             # todo: handle enum and type constructors
                             stub_routine = StubNanobindConstructor(name, obj, suppress_warning=True)
                         else:
