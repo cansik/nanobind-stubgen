@@ -87,6 +87,17 @@ class StubModule(StubEntry):
         for child in self.children:
             child.export(module_path)
 
+        # create __all__ list
+        out = []
+        out.append("__all__ = [")
+        for child in self.children:
+            out.append(f"    \"{child.name}\",")
+        out.append("]")
+
+        with open(module_path, "a") as f:
+            text = self._create_string(out, intent)
+            f.writelines(text)
+
     @property
     def has_sub_modules(self) -> bool:
         return len([child for child in self.children if isinstance(child, StubModule)]) > 0
