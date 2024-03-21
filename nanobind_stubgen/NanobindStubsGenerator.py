@@ -76,7 +76,7 @@ class StubModule(StubEntry):
             module_path = output_path.joinpath(f"{self.name}.pyi")
 
         # create init file
-        out = [f"from typing import Any, Optional, overload, Typing, Sequence, Iterable, Union, Callable",
+        out = [f"from typing import Any, Optional, overload, Type, Sequence, Iterable, Union, Callable",
                f"from enum import Enum",
                f"import {self.import_path}"]
 
