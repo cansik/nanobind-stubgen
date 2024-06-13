@@ -40,7 +40,7 @@ class StubEntry(ABC):
             doc_str = self.obj.__doc__
 
         # split doc string for per-line indentation
-        doc_str = str(doc_str).strip()
+        doc_str = doc_str.strip() if type(doc_str) == str else ""
         doc_lines = [l.strip() for l in doc_str.split("\n")]
 
         if doc_str is not None and str(doc_str).strip() != "":
