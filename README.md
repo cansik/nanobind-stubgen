@@ -1,5 +1,7 @@
 # nanobind-stubgen [![PyPI](https://img.shields.io/pypi/v/nanobind-stubgen)](https://pypi.org/project/nanobind-stubgen/)
 
+ ⚠️ This project has been archived. Please use the official [nanobind stubgen](https://nanobind.readthedocs.io/en/latest/typing.html#stub-generation).
+
 Generate Python stub files (`pyi`) for code completion in IDEs for [nanobind](https://github.com/wjakob/nanobind) modules.
 
 ### Installation
